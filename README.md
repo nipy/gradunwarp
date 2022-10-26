@@ -15,43 +15,40 @@ for use within the [HCP Minimal Preprocessing Pipelines][HCP Pipelines].
 
 ### Prerequisites
 
-gradunwarp needs
-
-* Python (>=2.7 or 3.x)
-* [Numpy][Numpy] (preferably, the latest)
-* [Scipy][Scipy] (preferably, the latest)
-* Numpy devel package (to compile external modules written in C)
-* [nibabel][nibabel] (latest trunk, which has the MGH support)
-
-requirements for nibabel.
-
-* [PyDICOM][PyDICOM] 0.9.5 or greater (for DICOM support)
-* [nose][nose] 0.11 or greater (to run the tests)
-* [sphinx][sphinx] (to build the documentation)
-
-The installation of these in Ubuntu is as simple as
-
-    sudo apt-get install python-numpy
-    sudo apt-get install python-scipy
+You can install the necessary prerequisites in most Ubuntu or Debian-based distributions with this command:
+```
+sudo apt-get install python3-numpy python3-pip
+```
 
 ### Install
 
-For convenience both the gradunwarp tarball can be downloaded
-[here][gradunwarp-hcp-tarball] and the nibabel tarball can be downloaded
-from [here][nibabel-tarball].
+For convenience the latest gradunwarp tarball can be downloaded from [here][gradunwarp-hcp-tarball].
 
-They are extracted and the following step is the same for gradunwarp and
-nibabel installation. First, change to the respective directory. Then,
+First, extract the gradunwarp tarball, and `cd` into the folder it creates. Then do:
+```
+sudo pip3 install .
+```
+If you don't have superuser permissions on the machine, you can use the `--user` switch of pip install:
+```
+pip3 install . --user
+```
+If you use the `--user` switch, you will need to add `/home/<username>/.local/bin` to your `PATH` environment variable, replacing `<username>` with your user name.
 
-    sudo python setup.py install
+#### Details
 
-Note: It is possible that you don't have superuser permissions. In that
-case, you can use the `--prefix` switch of setup.py install.
+If you are on an old distribution that doesn't have the necessary versions of nibabel and its dependencies, here are the details of what you need:
 
-    python setup.py install --prefix=/home/foo/
+* Python (>=2.7 or 3.x)
+* [Numpy][Numpy]
+* [Scipy][Scipy]
+* Numpy devel package, if separate (to compile external modules written in C)
+* [nibabel][nibabel] (1.2.0 or later, for MGH support)
 
-In that case, make sure your `PATH` has `/home/foo/bin` and make sure the
-`PYTHONPATH` has `/home/foo/lib/python2.7/site-packages/`
+Dependencies of nibabel:
+
+* [PyDICOM][PyDICOM] 0.9.5 or later (for DICOM support)
+* [nose][nose] 0.11 or later (to run the tests)
+* [sphinx][sphinx] (to build the documentation)
 
 ## Usage
 
@@ -156,7 +153,6 @@ To do this, after cloning the [HCP Pipelines Repository][HCP Pipelines] use:
 [gradunwarp-ksubramz]: https://github.com/ksubramz/gradunwarp
 [HCP]: http://www.humanconnectome.org
 [gradunwarp-hcp-tarball]: https://github.com/Washington-University/gradunwarp/releases
-[nibabel-tarball]: https://github.com/downloads/ksubramz/gradunwarp/nibabel-1.2.0.dev.tar.gz
 [Numpy]: http://www.numpy.org
 [Scipy]: http://www.scipy.org
 [nibabel]: http://nipy.org/nibabel
