@@ -46,7 +46,7 @@ def coef_file_parse(cfile, txt_var_map):
     '''
     # parse .coef file. Strip unneeded characters. a valid line in that file is
     # broken into validline_list
-    coef_re = re.compile('^[^\#]')  # regex for first character not a '#'
+    coef_re = re.compile(r'^[^\#]')  # regex for first character not a '#'
     coef_file = open(cfile, 'r')
     for line in coef_file.readlines():
         if coef_re.match(line):
@@ -78,137 +78,80 @@ def get_siemens_coef(cfile):
     # allegra is slightly different
     if cfile.startswith('allegra'):
         coef_array_sz = 15
-    ax = np.zeros((coef_array_sz, coef_array_sz))
-    ay = np.zeros((coef_array_sz, coef_array_sz))
-    az = np.zeros((coef_array_sz, coef_array_sz))
-    bx = np.zeros((coef_array_sz, coef_array_sz))
-    by = np.zeros((coef_array_sz, coef_array_sz))
-    bz = np.zeros((coef_array_sz, coef_array_sz))
-    txt_var_map = {'Alpha_x': ax,
-                   'Alpha_y': ay,
-                   'Alpha_z': az,
-                   'Beta_x': bx,
-                   'Beta_y': by,
-                   'Beta_z': bz}
+
+    txt_var_map = create_txt_var_map(coef_array_sz)
 
     coef_file_parse(cfile, txt_var_map)
 
-    return Coeffs(ax, ay, az, bx, by, bz, R0_m)
+    return Coeffs(
+        txt_var_map['alpha_y'],
+        txt_var_map['alpha_z'],
+        txt_var_map['alpha_x'],
+        txt_var_map['beta_y'],
+        txt_var_map['beta_x'],
+        txt_var_map['beta_z'],
+        R0_m)
 
 
 def get_ge_coef(cfile):
     ''' Parse the GE .coef file.
     '''
-    ax = np.zeros((ge_cas, ge_cas))
-    ay = np.zeros((ge_cas, ge_cas))
-    az = np.zeros((ge_cas, ge_cas))
-    bx = np.zeros((ge_cas, ge_cas))
-    by = np.zeros((ge_cas, ge_cas))
-    bz = np.zeros((ge_cas, ge_cas))
-    txt_var_map = {'Alpha_x': ax,
-                   'Alpha_y': ay,
-                   'Alpha_z': az,
-                   'Beta_x': bx,
-                   'Beta_y': by,
-                   'Beta_z': bz}
+    txt_var_map = create_txt_var_map(coef_array_sz)
 
     coef_file_parse(cfile, txt_var_map)
 
-    return Coeffs(ax, ay, az, bx, by, bz, R0_m)
+    return Coeffs(
+        txt_var_map['alpha_y'],
+        txt_var_map['alpha_z'],
+        txt_var_map['alpha_x'],
+        txt_var_map['beta_y'],
+        txt_var_map['beta_x'],
+        txt_var_map['beta_z'],
+        R0_m)
 
 def grad_file_parse(gfile, txt_var_map):
-    ''' a separate function because GE and Siemens .coef files
-    have similar structure
-
-    modifies txt_var_map in place
-    '''
-    gf = open(gfile, 'r')
-    line = next(gf)
-    # skip the comments
-    while not line.startswith('#*] END:'):
-        line = next(gf)
-
-    # get R0
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-    R0_m = float(line.strip().split()[0])
-
-    # go to the data
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-    line = next(gf)
-
     xmax = 0
     ymax = 0
-
-    while 1:
-        lindex =  line.find('(')
-        rindex =  line.find(')')
-        if lindex == -1 and rindex == -1:
-            break
-        arrindex = line[lindex+1:rindex]
-        xs, ys = arrindex.split(',')
-        x = int(xs) 
-        y = int(ys)
-        if x > xmax:
-            xmax = x
-        if y > ymax:
-            ymax = y
-        if line.find('A') != -1 and line.find('x') != -1:
-            txt_var_map['Alpha_x'][x,y] = float(line.split()[-2])
-        if line.find('A') != -1 and line.find('y') != -1:
-            txt_var_map['Alpha_y'][x,y] = float(line.split()[-2])
-        if line.find('A') != -1 and line.find('z') != -1:
-            txt_var_map['Alpha_z'][x,y] = float(line.split()[-2])
-        if line.find('B') != -1 and line.find('x') != -1:
-            txt_var_map['Beta_x'][x,y] = float(line.split()[-2])
-        if line.find('B') != -1 and line.find('y') != -1:
-            txt_var_map['Beta_y'][x,y] = float(line.split()[-2])
-        if line.find('B') != -1 and line.find('z') != -1:
-            txt_var_map['Beta_z'][x,y] = float(line.split()[-2])
-        try:
-            line = next(gf)
-        except StopIteration:
-            break
-
-    # just return R0_m but also txt_var_map is returned
+    with open(gfile, 'r') as gf:
+        for line in gf:
+            re_search = re.search(r"(?P<no>\d+)[\s]+(?P<aorb>[AB])[\s]*\(\s*(?P<x>\d+),\s*(?P<y>\d+)\)\s+(?P<spectrum>[\-]?\d+\.\d+)\s+(?P<axis>[xyz])", line)
+            if re_search:
+                re_res = re_search.groupdict()
+                alphabeta = 'alpha' if re_res['aorb'] == 'A' else 'beta'
+                x, y = int(re_res['x']),int(re_res['y'])
+                field = "%s_%s"%(alphabeta, re_res['axis'])
+                txt_var_map[field][x, y] = float(re_res['spectrum'])
+                xmax, ymax = max(x, xmax), max(y, ymax)
+            else:
+                re_search = re.search(r"(?P<R0>\d+\.\d+) m = R0", line)
+                if re_search:
+                    R0_m = float(re_search.group('R0'))
     return R0_m, (xmax, ymax)
+
+def create_txt_var_map(coef_array_sz):
+    txt_var_map = {}
+    for ab in ['alpha', 'beta']:
+        for axis in 'xyz':
+            txt_var_map['%s_%s'%(ab,axis)] = np.zeros((coef_array_sz,)*2)
+    return txt_var_map
 
 def get_siemens_grad(gfile):
     ''' Parse the siemens .grad file
     '''
-    coef_array_sz = siemens_cas
     # allegra is slightly different
-    if gfile.startswith('coef_AC44'):
-        coef_array_sz = 15
-    ax = np.zeros((coef_array_sz, coef_array_sz))
-    ay = np.zeros((coef_array_sz, coef_array_sz))
-    az = np.zeros((coef_array_sz, coef_array_sz))
-    bx = np.zeros((coef_array_sz, coef_array_sz))
-    by = np.zeros((coef_array_sz, coef_array_sz))
-    bz = np.zeros((coef_array_sz, coef_array_sz))
-    txt_var_map = {'Alpha_x': ax,
-                   'Alpha_y': ay,
-                   'Alpha_z': az,
-                   'Beta_x': bx,
-                   'Beta_y': by,
-                   'Beta_z': bz}
+    coef_array_sz = 15 if gfile.startswith('coef_AC44') else siemens_cas
+
+    txt_var_map = create_txt_var_map(coef_array_sz)
+    print(txt_var_map)
 
     R0_m, max_ind = grad_file_parse(gfile, txt_var_map)
-    ind = max(max_ind)
+    ind = max(max_ind) + 1
 
-    # pruned alphas and betas
-    ax = ax[:ind+1, :ind+1]
-    ay = ay[:ind+1, :ind+1]
-    az = az[:ind+1, :ind+1]
-    bx = bx[:ind+1, :ind+1]
-    by = by[:ind+1, :ind+1]
-    bz = bz[:ind+1, :ind+1]
-
-    return Coeffs(ax, ay, az, bx, by, bz, R0_m)
-
+    return Coeffs(
+        txt_var_map['alpha_x'][:ind, :ind],
+        txt_var_map['alpha_y'][:ind, :ind],
+        txt_var_map['alpha_z'][:ind, :ind],
+        txt_var_map['beta_x'][:ind, :ind],
+        txt_var_map['beta_y'][:ind, :ind],
+        txt_var_map['beta_z'],
+        R0_m)
