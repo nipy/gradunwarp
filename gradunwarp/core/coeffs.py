@@ -146,7 +146,6 @@ def get_siemens_grad(gfile):
     coef_array_sz = 15 if gfile.startswith('coef_AC44') else siemens_cas
 
     txt_var_map = create_txt_var_map(coef_array_sz)
-    print(txt_var_map)
 
     R0_m, max_ind = grad_file_parse(gfile, txt_var_map)
     ind = max(max_ind) + 1
