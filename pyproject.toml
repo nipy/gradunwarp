@@ -2,7 +2,7 @@
 requires = [
   "setuptools",
   # Numpy 1.25 allows back-compiling and supports 3.9
-  "numpy>=1.25; python_version >= '3.9'",
+  "numpy~=1.25; python_version >= '3.9' and python_version < '3.13'",
   # Last version to support 3.6-3.8
   "numpy==1.19; python_version > '3.0' and python_version < '3.9'",
   # Last version to support 2.7
