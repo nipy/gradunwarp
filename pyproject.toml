@@ -35,4 +35,4 @@ push = false
 
 [tool.cibuildwheel]
 # Do not bother building pypy wheels
-skip = "pp*"
+skip = "pp* cp313*"

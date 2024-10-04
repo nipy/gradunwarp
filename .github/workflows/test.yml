@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - master
-    tags:
-      - "*"
+      - nipy
   pull_request:
     branches:
       - master
