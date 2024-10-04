@@ -115,7 +115,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: "Package deployment"
     needs: [pre-publish]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && github.event.action == 'published'
+    permissions:
+      id-token: write
+      attestations: write
+
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -124,4 +128,12 @@ jobs:
         run: |
           mv dist/*/*.{tar.gz,whl} dist
           rmdir dist/*/
+
+      - name: Generate artifact attestations
+        uses: actions/attest-build-provenance@1c608d11d69870c2092266b3f9a6f3abbf17002c # v1.4.3
+        with:
+          subject-path: "dist/nipy_gradunwarp-*"
+
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true
